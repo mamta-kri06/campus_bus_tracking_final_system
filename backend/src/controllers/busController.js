@@ -33,21 +33,16 @@ const updateBus = async (req, res, next) => {
     if (!bus) return res.status(404).json({ message: "Bus not found" });
 
     if (isDriver) {
-      const isAssignedDriver =
-        bus.driver && String(bus.driver) === String(req.user._id);
+      const isAssignedDriver = bus.driver && String(bus.driver) === String(req.user._id);
       if (!isAssignedDriver) {
         return res.status(403).json({ message: "Forbidden" });
       }
 
       const allowedDriverFields = ["status", "isTripActive"];
       const requestedFields = Object.keys(req.body || {});
-      const hasOnlyAllowedFields = requestedFields.every((field) =>
-        allowedDriverFields.includes(field),
-      );
+      const hasOnlyAllowedFields = requestedFields.every((field) => allowedDriverFields.includes(field));
       if (!hasOnlyAllowedFields) {
-        return res
-          .status(400)
-          .json({ message: "Drivers can only update status and trip state" });
+        return res.status(400).json({ message: "Drivers can only update status and trip state" });
       }
     }
 
@@ -93,8 +88,7 @@ const assignDriver = async (req, res, next) => {
       Bus.findById(busId),
       User.findOne({ _id: driverId, role: "driver" }),
     ]);
-    if (!bus || !driver)
-      return res.status(400).json({ message: "Invalid bus or driver" });
+    if (!bus || !driver) return res.status(400).json({ message: "Invalid bus or driver" });
 
     bus.driver = driver._id;
     await bus.save();
@@ -128,7 +122,7 @@ const getBusEta = async (req, res, next) => {
     const eta = estimateEtaMinutes(
       bus.currentLocation,
       { latitude: Number(lat), longitude: Number(lng) },
-      Number(process.env.DEFAULT_SPEED_KMPH || 24),
+      Number(process.env.DEFAULT_SPEED_KMPH || 24)
     );
     res.json({ busId, etaMinutes: eta });
   } catch (error) {
