@@ -6,7 +6,7 @@ export default function AdminDashboardPage() {
   const [routes, setRoutes] = useState([]);
   const [buses, setBuses] = useState([]);
   const [drivers, setDrivers] = useState([]);
-  const [newRoute, setNewRoute] = useState({ name: "", code: "" });
+  const [newRoute, setNewRoute] = useState({ name: "", code: "", stops: [] });
   const [newBus, setNewBus] = useState({ number: "", route: "" });
   const [editingRouteId, setEditingRouteId] = useState(null);
   const [editingBusId, setEditingBusId] = useState(null);
@@ -25,6 +25,12 @@ export default function AdminDashboardPage() {
     name: "",
     latitude: "",
     longitude: "",
+  });
+  const [newUser, setNewUser] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "driver",
   });
   const [feedback, setFeedback] = useState({ type: "", message: "" });
   const { socket, busLocations, isConnected } = useSocket();
@@ -56,8 +62,8 @@ export default function AdminDashboardPage() {
   const createRoute = async (e) => {
     e.preventDefault();
     try {
-      await client.post("/routes", { ...newRoute, stops: [] });
-      setNewRoute({ name: "", code: "" });
+      await client.post("/routes", newRoute);
+      setNewRoute({ name: "", code: "", stops: [] });
       await load();
       showFeedback("success", "Route created successfully");
     } catch (err) {
@@ -66,6 +72,29 @@ export default function AdminDashboardPage() {
         err.response?.data?.message || "Failed to create route",
       );
     }
+  };
+
+  const addStopToNewRoute = () => {
+    if (!newStop.name || !newStop.latitude || !newStop.longitude) return;
+    setNewRoute({
+      ...newRoute,
+      stops: [
+        ...newRoute.stops,
+        {
+          name: newStop.name,
+          latitude: Number(newStop.latitude),
+          longitude: Number(newStop.longitude),
+        },
+      ],
+    });
+    setNewStop({ name: "", latitude: "", longitude: "" });
+  };
+
+  const removeStopFromNewRoute = (index) => {
+    setNewRoute({
+      ...newRoute,
+      stops: newRoute.stops.filter((_, i) => i !== index),
+    });
   };
 
   const createBus = async (e) => {
@@ -79,6 +108,21 @@ export default function AdminDashboardPage() {
       showFeedback(
         "error",
         err.response?.data?.message || "Failed to create bus",
+      );
+    }
+  };
+
+  const createUser = async (e) => {
+    e.preventDefault();
+    try {
+      await client.post("/users", newUser);
+      setNewUser({ name: "", email: "", password: "", role: "driver" });
+      await load();
+      showFeedback("success", "User created successfully");
+    } catch (err) {
+      showFeedback(
+        "error",
+        err.response?.data?.message || "Failed to create user",
       );
     }
   };
@@ -169,8 +213,68 @@ export default function AdminDashboardPage() {
                   setNewRoute({ ...newRoute, code: e.target.value })
                 }
               />
-              <button className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white transition-all hover:bg-indigo-700">
-                Create Route
+
+              <div className="space-y-2 mt-4 pt-4 border-t border-slate-100">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  Add Stops
+                </p>
+                <input
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                  placeholder="Stop Name"
+                  value={newStop.name}
+                  onChange={(e) => setNewStop({ ...newStop, name: e.target.value })}
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                    placeholder="Latitude"
+                    type="number"
+                    step="any"
+                    value={newStop.latitude}
+                    onChange={(e) => setNewStop({ ...newStop, latitude: e.target.value })}
+                  />
+                  <input
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2 text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
+                    placeholder="Longitude"
+                    type="number"
+                    step="any"
+                    value={newStop.longitude}
+                    onChange={(e) => setNewStop({ ...newStop, longitude: e.target.value })}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={addStopToNewRoute}
+                  className="w-full rounded-xl border-2 border-dashed border-slate-200 py-2 text-xs font-bold text-slate-500 hover:border-indigo-300 hover:text-indigo-600 transition-all"
+                >
+                  + Add Stop to List
+                </button>
+              </div>
+
+              {newRoute.stops.length > 0 && (
+                <div className="mt-4 space-y-2 max-h-40 overflow-y-auto pr-2">
+                  {newRoute.stops.map((stop, i) => (
+                    <div key={i} className="flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-100">
+                      <div>
+                        <p className="text-xs font-bold text-slate-700">{stop.name}</p>
+                        <p className="text-[9px] text-slate-400">{stop.latitude}, {stop.longitude}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeStopFromNewRoute(i)}
+                        className="text-slate-300 hover:text-red-500"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white transition-all hover:bg-indigo-700 mt-4">
+                Create Route with {newRoute.stops.length} Stops
               </button>
             </form>
             <div className="my-6 border-t border-slate-100"></div>
@@ -202,6 +306,57 @@ export default function AdminDashboardPage() {
               </select>
               <button className="w-full rounded-xl bg-slate-900 py-3 text-sm font-bold text-white transition-all hover:bg-slate-800">
                 Assign & Create
+              </button>
+            </form>
+
+            <div className="my-6 border-t border-slate-100"></div>
+
+            <form onSubmit={createUser} className="space-y-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                New Personnel
+              </p>
+              <input
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                placeholder="Full Name"
+                value={newUser.name}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, name: e.target.value })
+                }
+                required
+              />
+              <input
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                placeholder="Email Address"
+                type="email"
+                value={newUser.email}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, email: e.target.value })
+                }
+                required
+              />
+              <input
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                placeholder="Password"
+                type="password"
+                value={newUser.password}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, password: e.target.value })
+                }
+                required
+              />
+              <select
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={newUser.role}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, role: e.target.value })
+                }
+              >
+                <option value="driver">Driver</option>
+                <option value="admin">Admin</option>
+                <option value="student">Student</option>
+              </select>
+              <button className="w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white transition-all hover:bg-emerald-700">
+                Create User
               </button>
             </form>
           </section>

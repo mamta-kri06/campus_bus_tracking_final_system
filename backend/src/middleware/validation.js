@@ -56,45 +56,46 @@ const validateLocationUpdate = (req, res, next) => {
 
 const validateRouteCreate = (req, res, next) => {
   try {
-    const { name, stops } = req.body;
+    const { name, code, stops } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({ message: "Route name is required" });
     }
 
-    if (!Array.isArray(stops) || stops.length === 0) {
-      return res
-        .status(400)
-        .json({ message: "Route must have at least one stop" });
+    if (!code || !code.trim()) {
+      return res.status(400).json({ message: "Route code is required" });
     }
 
-    // Validate each stop
-    for (let i = 0; i < stops.length; i++) {
-      const stop = stops[i];
-      if (!stop.name || !stop.latitude || !stop.longitude) {
-        return res.status(400).json({
-          message: `Stop ${i + 1} must have name, latitude, and longitude`,
-        });
-      }
+    // Allow empty stops during initial creation
+    if (stops && Array.isArray(stops)) {
+      // Validate each stop if provided
+      for (let i = 0; i < stops.length; i++) {
+        const stop = stops[i];
+        if (!stop.name || stop.latitude == null || stop.longitude == null) {
+          return res.status(400).json({
+            message: `Stop ${i + 1} must have name, latitude, and longitude`,
+          });
+        }
 
-      if (
-        typeof stop.latitude !== "number" ||
-        typeof stop.longitude !== "number"
-      ) {
-        return res.status(400).json({
-          message: `Stop ${i + 1} coordinates must be numbers`,
-        });
-      }
+        if (
+          typeof stop.latitude !== "number" ||
+          typeof stop.longitude !== "number"
+        ) {
+          return res.status(400).json({
+            message: `Stop ${i + 1} coordinates must be numbers`,
+          });
+        }
 
-      if (
-        stop.latitude < -90 ||
-        stop.latitude > 90 ||
-        stop.longitude < -180 ||
-        stop.longitude > 180
-      ) {
-        return res.status(400).json({
-          message: `Stop ${i + 1} has invalid coordinates`,
-        });
+        if (
+          stop.latitude < -90 ||
+          stop.latitude > 90 ||
+          stop.longitude < -180 ||
+          stop.longitude > 180
+        ) {
+          return res.status(400).json({
+            message: `Stop ${i + 1} has invalid coordinates`,
+          });
+        }
       }
     }
 

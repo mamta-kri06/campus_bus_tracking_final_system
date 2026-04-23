@@ -84,11 +84,40 @@ const deleteBus = async (req, res, next) => {
 const assignDriver = async (req, res, next) => {
   try {
     const { busId, driverId } = req.body;
-    const [bus, driver] = await Promise.all([
-      Bus.findById(busId),
-      User.findOne({ _id: driverId, role: "driver" }),
-    ]);
-    if (!bus || !driver) return res.status(400).json({ message: "Invalid bus or driver" });
+
+    if (!busId) {
+      return res.status(400).json({ message: "Bus ID is required" });
+    }
+
+    const bus = await Bus.findById(busId);
+    if (!bus) return res.status(404).json({ message: "Bus not found" });
+
+    // Handle Unassignment
+    if (!driverId) {
+      const currentDriverId = bus.driver;
+      bus.driver = null;
+      await bus.save();
+
+      if (currentDriverId) {
+        await User.findByIdAndUpdate(currentDriverId, { assignedBus: null });
+      }
+
+      return res.json({ message: "Driver unassigned", busId });
+    }
+
+    // Handle Assignment
+    const driver = await User.findOne({ _id: driverId, role: "driver" });
+    if (!driver) return res.status(400).json({ message: "Invalid driver" });
+
+    // Remove driver from previous bus if any
+    if (driver.assignedBus && String(driver.assignedBus) !== String(busId)) {
+      await Bus.findByIdAndUpdate(driver.assignedBus, { driver: null });
+    }
+
+    // Remove current driver from this bus if any
+    if (bus.driver && String(bus.driver) !== String(driverId)) {
+      await User.findByIdAndUpdate(bus.driver, { assignedBus: null });
+    }
 
     bus.driver = driver._id;
     await bus.save();
@@ -97,6 +126,9 @@ const assignDriver = async (req, res, next) => {
 
     res.json({ message: "Driver assigned", busId, driverId });
   } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(400).json({ message: "Invalid ID format" });
+    }
     next(error);
   }
 };

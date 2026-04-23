@@ -4,6 +4,9 @@ import { MapContainer, Marker, Popup, Polyline, TileLayer, useMap } from "react-
 import { useLocationContext } from "../context/LocationContext";
 import { getRouteColor } from "../utils/colors";
 import { useInterpolatedLocation } from "../hooks/useInterpolatedLocation";
+import RoutingMachine from "./RoutingMachine";
+
+import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
 
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
@@ -18,9 +21,18 @@ L.Icon.Default.mergeOptions({
 
 const movingBusIcon = L.divIcon({
   className: "bus-marker-moving",
-  html: '<span class="bus-marker-moving__dot"></span>',
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
+  html: `
+    <div class="bus-icon-container">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M19 17V11C19 9.9 18.1 9 17 9H7C5.9 9 5 9.9 5 11V17M19 17H5M19 17V18C19 18.6 18.6 19 18 19H17C16.4 19 16 18.6 16 18V17M5 17V18C5 18.6 5.4 19 6 19H7C7.6 19 8 18.6 8 18V17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M7 11V13H17V11" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M9 19V21H15V19" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="bus-ping"></div>
+    </div>
+  `,
+  iconSize: [40, 40],
+  iconAnchor: [20, 20],
 });
 
 function InterpolatedMarker({ bus, isSelected }) {
@@ -57,7 +69,7 @@ function RecenterOnLocation({ center }) {
 
 export default function BusMap({ buses, selectedBusId, onBusSelect }) {
   const { location } = useLocationContext();
-  const fallbackCenter = [12.9716, 77.5946];
+  const fallbackCenter = [23.811881649928363, 86.4442943404539];
   const [mapCenter, setMapCenter] = useState(fallbackCenter);
 
   useEffect(() => {
@@ -91,21 +103,19 @@ export default function BusMap({ buses, selectedBusId, onBusSelect }) {
       />
       <RecenterOnLocation center={mapCenter} />
       
-      {/* Route Polylines */}
+      {/* Route Road-Paths */}
       {buses.map((bus) => {
-        if (!bus.route?.stops?.length) return null;
+        if (!bus.route?.stops?.length || bus.route.stops.length < 2) return null;
         const isSelected = bus._id === selectedBusId;
         const color = getRouteColor(bus.route._id);
-        const path = bus.route.stops.map(s => [s.latitude, s.longitude]);
-        
+        const path = bus.route.stops.map((s) => [s.latitude, s.longitude]);
+
         return (
-          <Polyline
+          <RoutingMachine
             key={`route-${bus._id}`}
-            positions={path}
+            waypoints={path}
             color={color}
-            opacity={isSelected ? 0.8 : 0.3}
-            weight={isSelected ? 5 : 3}
-            dashArray={isSelected ? null : "5, 10"}
+            isSelected={isSelected}
           />
         );
       })}

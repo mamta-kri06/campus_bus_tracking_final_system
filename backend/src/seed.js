@@ -14,12 +14,14 @@ const seed = async () => {
   ]);
 
   const route = await Route.create({
-    name: "Main Campus Loop",
-    code: "MCL-1",
+    name: "IIT ISM Loop",
+    code: "ISM-01",
     stops: [
-      { name: "Library", latitude: 12.9716, longitude: 77.5946 },
-      { name: "Engineering Block", latitude: 12.9736, longitude: 77.5986 },
-      { name: "Hostel Gate", latitude: 12.9692, longitude: 77.5902 },
+      { name: "Location 1", latitude: 23.811881649928363, longitude: 86.4442943404539 },
+      { name: "Location 2", latitude: 23.811549736470667, longitude: 86.44067824679097 },
+      { name: "Location 3", latitude: 23.81198872878966, longitude: 86.43901536103179 },
+      { name: "Location 4", latitude: 23.81642398179947, longitude: 86.4394124680987 },
+      { name: "Location 5", latitude: 23.819322708608407, longitude: 86.43610324284606 },
     ],
   });
 
@@ -28,22 +30,22 @@ const seed = async () => {
     route: route._id,
     status: "stopped",
     currentLocation: {
-      latitude: 12.9716,
-      longitude: 77.5946,
+      latitude: 23.811881649928363,
+      longitude: 86.4442943404539,
       updatedAt: new Date(),
     },
   });
 
   const admin = await User.create({
-    name: "Admin User",
-    email: "admin@campus.local",
+    name: "Admin",
+    email: "admin@gmail.com",
     password: "admin123",
     role: "admin",
   });
 
   const driver = await User.create({
-    name: "Driver User",
-    email: "driver@campus.local",
+    name: "Driver",
+    email: "driver@gmail.com",
     password: "driver123",
     role: "driver",
     assignedBus: bus._id,
@@ -53,15 +55,16 @@ const seed = async () => {
   await bus.save();
 
   await User.create({
-    name: "Student User",
-    email: "student@campus.local",
+    name: "Student",
+    email: "student@gmail.com",
     password: "student123",
     role: "student",
   });
 
   console.log("Seed complete");
-  console.log("Admin login: admin@campus.local / admin123");
-  console.log("Driver login: driver@campus.local / driver123");
+  console.log("Admin login: admin@gmail.com / admin123");
+  console.log("Driver login: driver@gmail.com / driver123");
+  console.log("Student login: student@gmail.com / student123");
   process.exit(0);
 };
 
